@@ -19,11 +19,13 @@ func main() {
 		cli.StringFlag{
 			Name:   "port,p",
 			Usage:  "TCP `port` to listen on.",
-			EnvVar: "HTTP_PORT",
+			EnvVar: "TCP_PORT",
 			Value:  "80",
 		},
 	}
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		log.Error(err)
+	}
 }
 
 func httpListen(c *cli.Context) {
@@ -31,7 +33,9 @@ func httpListen(c *cli.Context) {
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
 		ctx.SetContentType("application/json; charset=utf8")
-		fmt.Fprint(ctx, fmt.Sprintf("Port %d open!", httpPort))
+		if _, err := fmt.Fprint(ctx, fmt.Sprintf("Port %d open!", httpPort)); err != nil {
+			log.Error(err)
+		}
 	}
 
 	log.Infof("starting server on port %d", httpPort)
