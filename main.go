@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/Sirupsen/logrus"
+	cli "github.com/urfave/cli"
 	"github.com/valyala/fasthttp"
-	log "gopkg.in/Sirupsen/logrus.v0"
-	cli "gopkg.in/urfave/cli.v1"
+)
+
+var (
+	welcomeMessage string
 )
 
 func main() {
@@ -28,22 +32,24 @@ func main() {
 	}
 }
 
+func requestHandler(ctx *fasthttp.RequestCtx) {
+	if _, err := fmt.Fprint(ctx, welcomeMessage); err != nil {
+		log.Error(err)
+	}
+}
+
+func serverStart(httpPort int) {
+	if err := fasthttp.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", httpPort), requestHandler); err != nil {
+		log.Fatalf("error in ListenAndServe: %s", err)
+	}
+}
+
 func httpListen(c *cli.Context) {
 	httpPort := c.Int("port")
-
-	requestHandler := func(ctx *fasthttp.RequestCtx) {
-		ctx.SetContentType("application/json; charset=utf8")
-		if _, err := fmt.Fprint(ctx, fmt.Sprintf("Port %d open!", httpPort)); err != nil {
-			log.Error(err)
-		}
-	}
+	welcomeMessage = fmt.Sprintf("Port %d open!", httpPort)
 
 	log.Infof("starting server on port %d", httpPort)
 
-	go func() {
-		if err := fasthttp.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", httpPort), requestHandler); err != nil {
-			log.Fatalf("error in ListenAndServe: %s", err)
-		}
-	}()
+	go serverStart(httpPort)
 	select {}
 }
